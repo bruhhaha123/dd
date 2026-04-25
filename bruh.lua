@@ -142,6 +142,7 @@ local holdRemote = remotePath:WaitForChild("HoldSign")
     elseif holdRemote:IsA("RemoteFunction") then
         holdRemote:InvokeServer(true)
     end
+        end
 end)
 
 -- Execute
