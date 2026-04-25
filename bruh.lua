@@ -1,92 +1,179 @@
--- [[ ♾️ INFINITE ROOM CREATOR & SIGN CONTROLLER ]] --
+-- [[ ♾️ INFINITE ROOM CREATOR & RANDOMIZER ]] --
 local RS = game:GetService("ReplicatedStorage")
 local LP = game:GetService("Players").LocalPlayer
-local cnt = 0
-
--- 1. ⚠️ UPDATE THESE IDs
--- Make sure these GamePasses are actually for THIS game!
+cnt=0
+-- 1. Configuration
 local GAMEPASS_LIST = {
     "890513823", 
     "890725129"
 }
-
--- [ 🛡️ SAFE REMOTE FINDER ] --
-local function getRemote(name)
-    for _, obj in pairs(RS:GetDescendants()) do
-        if obj.Name == name and obj:IsA("RemoteFunction") then
-            return obj
-        end
+local function chat(msg)
+    local tcs = game:GetService("TextChatService"):FindFirstChild("TextChannels")
+    if tcs and tcs:FindFirstChild("RBXGeneral") then
+        tcs.RBXGeneral:SendAsync(msg) -- Modern Chat
+    else
+        game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All") -- Old Chat
+    end
+end
+-- 🔍 Improved Remote Search (Fixed the Bindable/Remote issue)
+local function getRemote()
+    local create = RS:FindFirstChild("CreateRoom", true) 
+    if create and create:IsA("RemoteFunction") then
+        return create
+    end
+    -- Fallback to the known path if the search fails
+    local folderPath = RS:FindFirstChild("RemoteCalls", true)
+    if folderPath then
+        local target = folderPath:FindFirstChild("CreateRoom", true)
+        if target and target:IsA("RemoteFunction") then return target end
     end
     return nil
 end
-
--- [ 🚩 SIGN CONTROL SYSTEM ] --
+local function getDestroyRemote()
+    local create = RS:FindFirstChild("DestroyRoom", true) 
+    if create and create:IsA("RemoteFunction") then
+        return create
+    end
+    -- Fallback to the known path if the search fails
+    local folderPath = RS:FindFirstChild("RemoteCalls", true)
+    if folderPath then
+        local target = folderPath:FindFirstChild("DestroyRoom", true)
+        if target and target:IsA("RemoteFunction") then return target end
+    end
+    return nil
+end
+-- 🔍 Simplified Button Detection
+local function isRoomClosed()
+local lobbyGui = LP.PlayerGui:FindFirstChild("Lobby_Main")
+if lobbyGui.Enabled == true then
+    return false
+    end
+    return true
+end
 task.spawn(function()
-    task.wait(10) -- Wait for character to load
-    local signFolder = RS:FindFirstChild("RemoteCalls", true) 
-    if signFolder then
-        local signPath = signFolder:FindFirstChild("Sign", true)
-        if signPath then
-            local change = signPath:FindFirstChild("ChangeSignText")
-            local hold = signPath:FindFirstChild("HoldSign")
+    task.wait(800)
+    game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, game.Players.LocalPlayer)
+end)
+print("🚀 Script Running. Waiting for 'Play' button...")
+task.spawn(function()
+    while true do
+        task.wait(400)
+        local destroyRemote = getDestroyRemote()
+
+-- 2. Check if the remote actually exists
+        if destroyRemote then
+        print("📡 Sending DestroyRoom signal...")
+    
+    -- 3. Use pcall to fire it safely
+        local success, result = pcall(function()
+            return destroyRemote:InvokeServer()
+        end)
+
+        if success then
+            print("✅ Room destroyed successfully!")
+        else
+            warn("⚠️ Failed to fire remote: " .. tostring(result))
+        end
+        else
+            warn("❌ Could not find the DestroyRoom RemoteFunction!")
+        end
+            task.wait(2)
+        local create = getRemote()
             
-            if change and hold then
-                local txt = "FREE 10-500!"
-                if change:IsA("RemoteEvent") then change:FireServer(txt) else change:InvokeServer(txt) end
-                task.wait(1)
-                if hold:IsA("RemoteEvent") then hold:FireServer(true) end
-                print("🚩 Sign text set and character is holding it!")
+        if create then
+            cnt = cnt % #GAMEPASS_LIST
+            local randomID = GAMEPASS_LIST[cnt+1]
+            print("🎯 auto create: " .. randomID)
+            local args = {
+                [1] = "Colors",
+                [2] = 10,
+                [3] = {
+                    ["assetType"] = "GamePass",
+                    ["assetId"] = randomID 
+                },
+                [4] = true
+            }
+
+            local success, result = pcall(function()
+                return create:InvokeServer(unpack(args))
+            end)
+
+            if success then
+                print("🏠 Room Successfully Created!")
+                cnt = cnt + 1
+                task.wait(15) -- Prevent instant double-creation
+            else
+                warn("⚠️ Remote Call Failed: " .. tostring(result))
+                task.wait(5)
             end
+        else
+            warn("⚠️ 'CreateRoom' RemoteFunction not found!")
+            task.wait(10)
         end
     end
 end)
-
--- [ 🏠 MAIN ROOM LOOP ] --
+            
+            
+-- 2. The Main Loop (Room Creator)
 task.spawn(function()
-    print("🚀 Script Running. Watching for room status...")
+    local firstRun=true
     while true do
-        local lobbyGui = LP.PlayerGui:FindFirstChild("Lobby_Main")
-        -- If Lobby UI is NOT visible, we are likely not in a room
-        if lobbyGui and lobbyGui.Enabled == false then
-            local create = getRemote("CreateRoom")
+        if isRoomClosed() or firstRun==true then
+            if(firstRun==false) then
+                chat("tyyyyyyy!")
+            end
+            print("yo")
+                firstRun=false
+            while isRoomClosed() do
+            task.wait(1)
+            end
+            local create = getRemote()
             
             if create then
                 cnt = cnt % #GAMEPASS_LIST
-                local currentID = GAMEPASS_LIST[cnt + 1]
+                local randomID = GAMEPASS_LIST[cnt+1]
                 
-                print("🎯 Attempting Room with ID: " .. currentID)
-                
+                print("🎯 Play Button Found! Attempting Room Creation: " .. randomID)
+
                 local args = {
                     [1] = "Colors",
                     [2] = 10,
-                    [3] = {["assetType"] = "GamePass", ["assetId"] = currentID},
+                    [3] = {
+                        ["assetType"] = "GamePass",
+                        ["assetId"] = randomID 
+                    },
                     [4] = true
                 }
 
-                local success, result = pcall(function() 
-                    return create:InvokeServer(unpack(args)) 
+                local success, result = pcall(function()
+                    return create:InvokeServer(unpack(args))
                 end)
 
                 if success then
-                    print("✅ Room Created successfully!")
+                    print("🏠 Room Successfully Created!")
                     cnt = cnt + 1
-                    task.wait(300) -- Wait 5 minutes before checking again
+                    task.wait(15) -- Prevent instant double-creation
                 else
-                    -- If you see "User changed price" here, the ID in your list is wrong
-                    warn("❌ Server Error: " .. tostring(result))
-                    task.wait(10)
+                    warn("⚠️ Remote Call Failed: " .. tostring(result))
+                    task.wait(5)
                 end
+            else
+                warn("⚠️ 'CreateRoom' RemoteFunction not found!")
+                task.wait(10)
             end
         end
-        task.wait(5)
+        task.wait(2) -- Scan frequency
     end
 end)
 
--- [ 🎡 DAILY SPINNER ] --
+-- 3. Daily Spinner
 task.spawn(function()
     while true do
-        local daily = getRemote("ClaimDailySpinner")
-        if daily then pcall(function() daily:InvokeServer() end) end
-        task.wait(60) 
+        local daily = RS:FindFirstChild("ClaimDailySpinner", true) 
+        if daily and daily:IsA("RemoteFunction") then
+            pcall(function() daily:InvokeServer() end)
+            print("🎡 Daily Spinner Claimed!")
+        end
+        task.wait(2) 
     end
 end)
