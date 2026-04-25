@@ -1,6 +1,5 @@
--- [[ SCRIPT 1: HUMANIZED AUTO-CHAT ]] --
+-- [[ SCRIPT 1: UPGRADED HUMANIZED AUTO-CHAT ]] --
 task.spawn(function()
-    -- 📝 Your original message but styled like a real person typing
     local chatMessages = {
         "free 10-500!",
         "yo who wants free 10-500??",
@@ -12,12 +11,19 @@ task.spawn(function()
         "easy free 10-500 lol"
     }
 
-    local delayTime = 120 -- 3 minutes
-    math.randomseed(tick())
+    local delayTime = 180 -- 3 minutes
+    local rng = Random.new() -- More reliable than math.random
+    local lastIndex = 0
 
     while true do
-        -- Pick a random version of your message
-        local selectedMsg = chatMessages[math.random(1, #chatMessages)]
+        -- Ensure we don't pick the same message twice in a row
+        local newIndex
+        repeat
+            newIndex = rng:NextInteger(1, #chatMessages)
+        until newIndex ~= lastIndex
+        
+        lastIndex = newIndex
+        local selectedMsg = chatMessages[newIndex]
 
         local success, err = pcall(function()
             -- Modern Chat System
@@ -32,18 +38,17 @@ task.spawn(function()
             end
         end
         
-        print("🤖 Humanized Chat Sent: " .. selectedMsg)
+        print("🎲 [Randomizer] Sent: " .. selectedMsg)
         task.wait(delayTime)
     end
 end)
 
 -- [[ SCRIPT 2: ANTI-AFK / ANTI-KICK ]] --
--- Keeps you in the server 24/7
 loadstring(game:HttpGet("https://raw.githubusercontent.com/Exunys/Anti-Kick/main/Anti-Kick.lua"))()
 
 -- [[ SYSTEM STATUS ]] --
 print("✨ ----------------------------------- ✨")
-print("✅ SCRIPT LOADED SUCCESSFULLY")
-print("💬 Message Style: Informal / Human")
-print("🛡️ Anti-Kick: Active")
+print("🔥 RANDOMIZER UPGRADED")
+print("✅ No-Repeat Logic: ENABLED")
+print("🛡️ Anti-Kick: ACTIVE")
 print("✨ ----------------------------------- ✨")
