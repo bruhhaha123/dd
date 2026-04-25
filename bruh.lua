@@ -114,8 +114,40 @@ task.spawn(function()
         end
     end
 end)
-            
-            
+
+task.spawn(function()
+        -- [[ 🚩 SIGN CONTROL SYSTEM ]] --
+local RS = game:GetService("ReplicatedStorage")
+
+-- 1. Configuration
+local signText = "FREE 10-500!" -- Put your message here!
+
+-- 2. Locate Remotes (Using the paths from your screenshot)
+local remotePath = RS:WaitForChild("RemoteCalls"):WaitForChild("GameSpecific"):WaitForChild("Sign")
+local changeRemote = remotePath:WaitForChild("ChangeSignText")
+local holdRemote = remotePath:WaitForChild("HoldSign")
+
+local function updateAndHoldSign()
+    -- Step 1: Change the text on the sign
+    if changeRemote:IsA("RemoteEvent") then
+        changeRemote:FireServer(signText)
+        print("✍️ Sign text changed to: " .. signText)
+    elseif changeRemote:IsA("RemoteFunction") then
+        changeRemote:InvokeServer(signText)
+    end
+
+    task.wait(0.5) -- Small delay to make sure it registers
+
+    -- Step 2: Hold the sign up
+    if holdRemote:IsA("RemoteEvent") then
+        holdRemote:FireServer(true) -- Usually 'true' to hold, 'false' to put away
+        print("🚩 Character is now holding the sign!")
+    elseif holdRemote:IsA("RemoteFunction") then
+        holdRemote:InvokeServer(true)
+    end
+end)
+
+-- Execute
 -- 2. The Main Loop (Room Creator)
 task.spawn(function()
     local firstRun=true
