@@ -34,7 +34,57 @@ if lobbyGui.Enabled == true then
 end
 
 print("🚀 Script Running. Waiting for 'Play' button...")
+task.spawn(function()
+    while true do
+        -- 1. ⏳ The 270 Second Wait
+        task.wait(270)
 
+        -- 2. 🔍 Logic Check: Are we in a match?
+        local lobbyGui = LP.PlayerGui:FindFirstChild("Lobby_Main")
+        local isInMatch = lobbyGui and lobbyGui.Enabled == false
+
+        -- 3. 💥 Step A: Destroy Room (Only if in match)
+        if isInMatch then
+            local destroyRemote = findRemote("DestroyRoom")
+            if destroyRemote and destroyRemote:IsA("RemoteFunction") then
+                print("💥 Time limit reached! Destroying old room...")
+                pcall(function() destroyRemote:InvokeServer() end)
+                task.wait(5) -- Give the game time to reset you to lobby
+            end
+        end
+
+        -- 4. 🏠 Step B: Create New Room (Lobby should be open now)
+        local createRemote = findRemote("CreateRoom")
+        if createRemote and createRemote:IsA("RemoteFunction") then
+            cnt = cnt % #GAMEPASS_LIST
+            local randomID = GAMEPASS_LIST[cnt + 1]
+
+            print("🎯 Attempting Room Creation with ID: " .. randomID)
+
+            local args = {
+                [1] = "Colors",
+                [2] = 10,
+                [3] = {
+                    ["assetType"] = "GamePass",
+                    ["assetId"] = randomID
+                },
+                [4] = true
+            }
+
+            local success, result = pcall(function()
+                return createRemote:InvokeServer(unpack(args))
+            end)
+
+            if success then
+                print("✅ Room Successfully Created!")
+                cnt = cnt + 1
+            else
+                warn("⚠️ Creation Failed: " .. tostring(result))
+            end
+        end
+    end
+end)
+        
 -- 2. The Main Loop (Room Creator)
 task.spawn(function()
     task.wait(10)
@@ -60,7 +110,7 @@ task.spawn(function()
                     [2] = 10,
                     [3] = {
                         ["assetType"] = "GamePass",
-                        ["assetId"] = randomID 
+                        ["assetId"] = randomID
                     },
                     [4] = true
                 }
