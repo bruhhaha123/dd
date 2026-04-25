@@ -51,7 +51,7 @@ end)
 print("🚀 Script Running. Waiting for 'Play' button...")
 task.spawn(function()
     while true do
-        task.wait(270)
+        task.wait(400)
         local destroyRemote = getDestroyRemote()
 
 -- 2. Check if the remote actually exists
@@ -71,6 +71,7 @@ task.spawn(function()
         else
             warn("❌ Could not find the DestroyRoom RemoteFunction!")
         end
+            task.wait(2)
         local create = getRemote()
             
         if create then
@@ -165,6 +166,6 @@ task.spawn(function()
             pcall(function() daily:InvokeServer() end)
             print("🎡 Daily Spinner Claimed!")
         end
-        task.wait(60) 
+        task.wait(2) 
     end
 end)
