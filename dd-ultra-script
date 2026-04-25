@@ -1,0 +1,23 @@
+-- [[ MASTER LOADER ]] --
+
+-- Execute Script 1 (hi.lua)
+task.spawn(function()
+    local success, err = pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/bruhhaha123/dd/refs/heads/main/hi.lua"))()
+    end)
+    if success then print("✅ hi.lua loaded successfully!") else warn("❌ Error loading hi.lua: " .. err) end
+end)
+
+-- Execute Script 2 (bruh.lua)
+task.spawn(function()
+    local success, err = pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/bruhhaha123/dd/refs/heads/main/bruh.lua"))()
+    end)
+    if success then print("✅ bruh.lua loaded successfully!") else warn("❌ Error loading bruh.lua: " .. err) end
+end)
+task.spawn(function()
+    local success, err = pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/bruhhaha123/dd/refs/heads/main/bruh1.lua"))()
+    end)
+    if success then print("✅ bruh.lua loaded successfully!") else warn("❌ Error loading bruh1.lua: " .. err) end
+end)
