@@ -1,8 +1,8 @@
 -- [[ ♾️ INFINITE ROOM CREATOR & RANDOMIZER ]] --
-wait(15)
 local RS = game:GetService("ReplicatedStorage")
 local LP = game:GetService("Players").LocalPlayer
 cnt=0
+wait(15)
 -- 1. Configuration
 local GAMEPASS_LIST = {
     "890717187", 
