@@ -6,7 +6,6 @@ local cnt = 0
 -- 1. ⚠️ UPDATE THESE IDs
 -- Make sure these GamePasses are actually for THIS game!
 local GAMEPASS_LIST = {
-    "890717187", 
     "890513823", 
     "890725129"
 }
