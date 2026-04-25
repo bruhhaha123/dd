@@ -1,16 +1,14 @@
--- [[ SMART ROOM MANAGER - REFINED CHECK ]] --
+-- [[ ♾️ INFINITE ROOM CREATOR & RANDOMIZER ]] --
 local RS = game:GetService("ReplicatedStorage")
-local Players = game:GetService("Players")
-local LP = Players.LocalPlayer
 
 -- 1. Configuration
 local GAMEPASS_LIST = {
-    "890717187", 
-    "890513823", 
+    "890717187", -- Your first GamePass ID
+    "890513823", -- Add more IDs here in quotes!
     "890725129"
 }
 
-local function findRemote(path)
+local function find(path)
     local current = RS
     for _, name in pairs(path:split(".")) do
         current = current:WaitForChild(name, 5)
@@ -19,64 +17,57 @@ local function findRemote(path)
     return current
 end
 
--- 2. The Main Manager Loop
+-- 2. The Main Loop
 task.spawn(function()
-    local cnt = 0
+    local cnt=0;
     while true do
-        -- 🔍 SPECIFIC CHECK:
-        -- We look for an object in Workspace with your name that IS NOT your character.
-        local roomObject = workspace:FindFirstChild(LP.Name)
-        local isActuallyARoom = false
+        cnt=cnt%3
+        local create = find("RemoteCalls.GameSpecific.Tickets.CreateRoom")
         
-        if roomObject and roomObject ~= LP.Character then
-            isActuallyARoom = true
-        end
-        
-        if not isActuallyARoom then
-            print("📭 No room detected (Character doesn't count). Creating...")
+        if create then
+            -- 🎲 Pick a random GamePass from your list
+            local randomID = GAMEPASS_LIST[cnt+1]
             
-            local create = findRemote("RemoteCalls.GameSpecific.Tickets.CreateRoom")
-            if create then
-                local currentID = GAMEPASS_LIST[(cnt % #GAMEPASS_LIST) + 1]
-                print("🎲 Using GamePass ID: " .. currentID)
+            print("🎲 Randomizing: Using GamePass ID " .. randomID)
 
-                local args = {
-                    [1] = "TicTacToe",
-                    [2] = 10,
-                    [3] = {
-                        ["assetType"] = "GamePass",
-                        ["assetId"] = currentID
-                    },
-                    [4] = true
-                }
+            local args = {
+                [1] = "TicTacToe",
+                [2] = 10,
+                [3] = {
+                    ["assetType"] = "GamePass",
+                    ["assetId"] = randomID -- String from our random list
+                },
+                [4] = true
+            }
 
-                local success, result = pcall(function()
-                    return create:InvokeServer(unpack(args))
-                end)
+            -- Try to create the room
+            local success, result = pcall(function()
+                return create:InvokeServer(unpack(args))
+            end)
 
-                if success then
-                    print("🏠 Room Created! 🚀")
-                    cnt = cnt + 1
-                else
-                    warn("⚠️ Creation Failed: " .. tostring(result))
-                end
+            if success then
+                print("🏠 Room Created! Waiting for match to end...")
+            else
+                warn("⚠️ Room Creation Failed, retrying in 10s...")
             end
-        else
-            -- print("✅ Room detected in Workspace. Waiting...")
         end
 
-        task.wait(10) 
+        -- ⏳ The "Cooldown" 
+        -- This waits 30 seconds before checking to create a NEW room.
+        -- Adjust this based on how long your matches usually last!
+        task.wait(30)
+        cnt=cnt+1
     end
 end)
 
--- 3. Daily Spinner (Safe Interval)
+-- 3. Daily Spinner (Runs once on join)
 task.spawn(function()
-    while true do
-        local daily = findRemote("RemoteCalls.GameSpecific.DailySpinner.ClaimDailySpinner") 
-        if daily then
-            pcall(function() daily:InvokeServer() end)
-            print("🎡 Daily Spinner Check Done.")
-        end
-        task.wait(5) -- Check every 5 minutes
+        while true do
+    local daily = find("RemoteCalls.GameSpecific.DailySpinner.ClaimDailySpinner") 
+    if daily then
+        pcall(function() daily:InvokeServer() end)
+        print("🎡 Daily Spinner Claimed!")
+                task.wait(15)
+            end
     end
 end)
