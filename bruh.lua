@@ -126,17 +126,14 @@ local signText = "FREE 10-500!" -- Put your message here!
 local remotePath = RS:WaitForChild("RemoteCalls"):WaitForChild("GameSpecific"):WaitForChild("Sign")
 local changeRemote = remotePath:WaitForChild("ChangeSignText")
 local holdRemote = remotePath:WaitForChild("HoldSign")
-
-local function updateAndHoldSign()
     -- Step 1: Change the text on the sign
     if changeRemote:IsA("RemoteEvent") then
         changeRemote:FireServer(signText)
         print("✍️ Sign text changed to: " .. signText)
     elseif changeRemote:IsA("RemoteFunction") then
         changeRemote:InvokeServer(signText)
-    end
 
-    task.wait(0.5) -- Small delay to make sure it registers
+    task.wait(3) -- Small delay to make sure it registers
 
     -- Step 2: Hold the sign up
     if holdRemote:IsA("RemoteEvent") then
@@ -152,11 +149,11 @@ end)
 task.spawn(function()
     local firstRun=true
     while true do
-            if(firstRun==false) then
-                            chat("tyyyyyyy!")
-            end
         if isRoomClosed() or firstRun==true then
             print("yo")
+                                if(firstRun==false) then
+                chat("tyyyyyyy!")
+            end
                 firstRun=false
             while isRoomClosed() do
             task.wait(1)
