@@ -8,7 +8,14 @@ local GAMEPASS_LIST = {
     "890513823", 
     "890725129"
 }
-
+local function chat(msg)
+    local tcs = game:GetService("TextChatService"):FindFirstChild("TextChannels")
+    if tcs and tcs:FindFirstChild("RBXGeneral") then
+        tcs.RBXGeneral:SendAsync(msg) -- Modern Chat
+    else
+        game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All") -- Old Chat
+    end
+end
 -- 🔍 Improved Remote Search (Fixed the Bindable/Remote issue)
 local function getRemote()
     local create = RS:FindFirstChild("CreateRoom", true) 
@@ -114,6 +121,7 @@ task.spawn(function()
     local firstRun=true
     while true do
         if isRoomClosed() or firstRun==true then
+            chat(tyyyyyyy!)
             print("yo")
                 firstRun=false
             while isRoomClosed() do
