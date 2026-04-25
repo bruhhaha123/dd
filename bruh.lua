@@ -67,6 +67,7 @@ task.spawn(function()
     if daily then
         pcall(function() daily:InvokeServer() end)
         print("🎡 Daily Spinner Claimed!")
+                wait(15)
             end
     end
 end)
