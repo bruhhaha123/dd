@@ -62,9 +62,11 @@ end)
 
 -- 3. Daily Spinner (Runs once on join)
 task.spawn(function()
+        while true do
     local daily = find("RemoteCalls.GameSpecific.DailySpinner.ClaimDailySpinner") 
     if daily then
         pcall(function() daily:InvokeServer() end)
         print("🎡 Daily Spinner Claimed!")
+            end
     end
 end)
