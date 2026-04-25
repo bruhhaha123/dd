@@ -1,7 +1,7 @@
 -- [[ ♾️ INFINITE ROOM CREATOR & RANDOMIZER ]] --
 local RS = game:GetService("ReplicatedStorage")
 local LP = game:GetService("Players").LocalPlayer
-
+cnt=0
 -- 1. Configuration
 local GAMEPASS_LIST = {
     "890717187", 
@@ -49,7 +49,6 @@ task.spawn(function()
     game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, game.Players.LocalPlayer)
 end)
 print("🚀 Script Running. Waiting for 'Play' button...")
-cnt=0
 task.spawn(function()
     while true do
         task.wait(270)
