@@ -1,73 +1,99 @@
 -- [[ ♾️ INFINITE ROOM CREATOR & RANDOMIZER ]] --
 local RS = game:GetService("ReplicatedStorage")
+local LP = game:GetService("Players").LocalPlayer
 
 -- 1. Configuration
 local GAMEPASS_LIST = {
-    "890717187", -- Your first GamePass ID
-    "890513823", -- Add more IDs here in quotes!
+    "890717187", 
+    "890513823", 
     "890725129"
 }
 
-local function find(path)
-    local current = RS
-    for _, name in pairs(path:split(".")) do
-        current = current:WaitForChild(name, 5)
-        if not current then return nil end
+-- 🔍 Improved Remote Search (Fixed the Bindable/Remote issue)
+local function getRemote()
+    local create = RS:FindFirstChild("CreateRoom", true) 
+    if create and create:IsA("RemoteFunction") then
+        return create
     end
-    return current
+    -- Fallback to the known path if the search fails
+    local folderPath = RS:FindFirstChild("RemoteCalls", true)
+    if folderPath then
+        local target = folderPath:FindFirstChild("CreateRoom", true)
+        if target and target:IsA("RemoteFunction") then return target end
+    end
+    return nil
 end
 
--- 2. The Main Loop
+-- 🔍 Simplified Button Detection
+local function isRoomClosed()
+local lobbyGui = LP.PlayerGui:FindFirstChild("Lobby_Main")
+if lobbyGui.Enabled == true then
+    return false
+    end
+    return true
+end
+
+print("🚀 Script Running. Waiting for 'Play' button...")
+
+-- 2. The Main Loop (Room Creator)
 task.spawn(function()
-    local cnt=0;
+    task.wait(10)
+    local firstRun=true
+    local cnt = 0
     while true do
-        cnt=cnt%3
-        local create = find("RemoteCalls.GameSpecific.Tickets.CreateRoom")
-        
-        if create then
-            -- 🎲 Pick a random GamePass from your list
-            local randomID = GAMEPASS_LIST[cnt+1]
+        if isRoomClosed()or firstRun==true then
+            print("yo")
+                firstRun=false
+            while isRoomClosed() do
+            task.wait(1)
+            end
+            local create = getRemote()
             
-            print("🎲 Randomizing: Using GamePass ID " .. randomID)
+            if create then
+                cnt = cnt % #GAMEPASS_LIST
+                local randomID = GAMEPASS_LIST[cnt+1]
+                
+                print("🎯 Play Button Found! Attempting Room Creation: " .. randomID)
 
-            local args = {
-                [1] = "TicTacToe",
-                [2] = 10,
-                [3] = {
-                    ["assetType"] = "GamePass",
-                    ["assetId"] = randomID -- String from our random list
-                },
-                [4] = true
-            }
+                local args = {
+                    [1] = "Colors",
+                    [2] = 10,
+                    [3] = {
+                        ["assetType"] = "GamePass",
+                        ["assetId"] = randomID 
+                    },
+                    [4] = true
+                }
 
-            -- Try to create the room
-            local success, result = pcall(function()
-                return create:InvokeServer(unpack(args))
-            end)
+                local success, result = pcall(function()
+                    return create:InvokeServer(unpack(args))
+                end)
 
-            if success then
-                print("🏠 Room Created! Waiting for match to end...")
+                if success then
+                    print("🏠 Room Successfully Created!")
+                    cnt = cnt + 1
+                    task.wait(15) -- Prevent instant double-creation
+                else
+                    warn("⚠️ Remote Call Failed: " .. tostring(result))
+                    task.wait(5)
+                end
             else
-                warn("⚠️ Room Creation Failed, retrying in 10s...")
+                warn("⚠️ 'CreateRoom' RemoteFunction not found!")
+                task.wait(10)
             end
         end
-
-        -- ⏳ The "Cooldown" 
-        -- This waits 30 seconds before checking to create a NEW room.
-        -- Adjust this based on how long your matches usually last!
-        task.wait(30)
-        cnt=cnt+1
+        task.wait(2) -- Scan frequency
     end
 end)
 
--- 3. Daily Spinner (Runs once on join)
+-- 3. Daily Spinner
 task.spawn(function()
-        while true do
-    local daily = find("RemoteCalls.GameSpecific.DailySpinner.ClaimDailySpinner") 
-    if daily then
-        pcall(function() daily:InvokeServer() end)
-        print("🎡 Daily Spinner Claimed!")
-                task.wait(15)
-            end
+    while true do
+        local daily = RS:FindFirstChild("ClaimDailySpinner", true) 
+        if daily and daily:IsA("RemoteFunction") then
+            pcall(function() daily:InvokeServer() end)
+            print("🎡 Daily Spinner Claimed!")
+        end
+        task.wait(60) 
     end
 end)
