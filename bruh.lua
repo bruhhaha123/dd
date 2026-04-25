@@ -120,10 +120,10 @@ end)
 task.spawn(function()
     local firstRun=true
     while true do
-            if(firstRun==false) then
-                            chat("tyyyyyyy!")
-            end
         if isRoomClosed() or firstRun==true then
+            if(firstRun==false) then
+                chat("tyyyyyyy!")
+            end
             print("yo")
                 firstRun=false
             while isRoomClosed() do
