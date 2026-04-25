@@ -44,7 +44,7 @@ if lobbyGui.Enabled == true then
     end
     return true
 end
-task.spawn(funtion()
+task.spawn(function()
     task.wait(800)
     game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, game.Players.LocalPlayer)
 end)
