@@ -1,10 +1,11 @@
--- [[ ♾️ INFINITE ROOM CREATOR & RANDOMIZER ]] --
+-- [[ 🧠 SMART INFINITE ROOM CREATOR - V5 ]] --
 local RS = game:GetService("ReplicatedStorage")
+local LP = game.Players.LocalPlayer
 
 -- 1. Configuration
 local GAMEPASS_LIST = {
-    "890717187", -- Your first GamePass ID
-    "890513823", -- Add more IDs here in quotes!
+    "890717187", 
+    "890513823", 
     "890725129"
 }
 
@@ -17,57 +18,61 @@ local function find(path)
     return current
 end
 
--- 2. The Main Loop
+-- 2. The Main Smart Loop
 task.spawn(function()
-    local cnt=0;
+    local cnt = 0
     while true do
-        cnt=cnt%3
-        local create = find("RemoteCalls.GameSpecific.Tickets.CreateRoom")
+        -- 🔍 CHECK: Does your room object exist in Workspace?
+        local myRoom = workspace:FindFirstChild(LP.Name)
         
-        if create then
-            -- 🎲 Pick a random GamePass from your list
-            local randomID = GAMEPASS_LIST[cnt+1]
+        if not myRoom then
+            print("📭 Room not found. Creating a new one...")
             
-            print("🎲 Randomizing: Using GamePass ID " .. randomID)
+            local create = find("RemoteCalls.GameSpecific.Tickets.CreateRoom")
+            if create then
+                -- Rotate through the list (1 -> 2 -> 3 -> repeat)
+                local currentID = GAMEPASS_LIST[(cnt % #GAMEPASS_LIST) + 1]
+                
+                print("🎲 Using GamePass ID: " .. currentID)
 
-            local args = {
-                [1] = "TicTacToe",
-                [2] = 10,
-                [3] = {
-                    ["assetType"] = "GamePass",
-                    ["assetId"] = randomID -- String from our random list
-                },
-                [4] = true
-            }
+                local args = {
+                    [1] = "TicTacToe",
+                    [2] = 10,
+                    [3] = {
+                        ["assetType"] = "GamePass",
+                        ["assetId"] = currentID
+                    },
+                    [4] = true
+                }
 
-            -- Try to create the room
-            local success, result = pcall(function()
-                return create:InvokeServer(unpack(args))
-            end)
+                local success, result = pcall(function()
+                    return create:InvokeServer(unpack(args))
+                end)
 
-            if success then
-                print("🏠 Room Created! Waiting for match to end...")
-            else
-                warn("⚠️ Room Creation Failed, retrying in 10s...")
+                if success then
+                    print("🏠 Room Created! 🚀")
+                    cnt = cnt + 1 -- Only move to the next GamePass if successful
+                else
+                    warn("⚠️ Creation Failed, retrying soon...")
+                end
             end
+        else
+            -- Room is already there, don't do anything
+            -- print("✅ Room is active. No action needed.")
         end
 
-        -- ⏳ The "Cooldown" 
-        -- This waits 30 seconds before checking to create a NEW room.
-        -- Adjust this based on how long your matches usually last!
-        task.wait(30)
-        cnt=cnt+1
+        task.wait(10) -- Check every 10 seconds to keep the server happy
     end
 end)
 
--- 3. Daily Spinner (Runs once on join)
+-- 3. Daily Spinner (Looping check)
 task.spawn(function()
-        while true do
-    local daily = find("RemoteCalls.GameSpecific.DailySpinner.ClaimDailySpinner") 
-    if daily then
-        pcall(function() daily:InvokeServer() end)
-        print("🎡 Daily Spinner Claimed!")
-                task.wait(15)
-            end
+    while true do
+        local daily = find("RemoteCalls.GameSpecific.DailySpinner.ClaimDailySpinner") 
+        if daily then
+            pcall(function() daily:InvokeServer() end)
+            print("🎡 Daily Spinner Check Performed!")
+        end
+        task.wait(10) -- Check every 10 minutes (since you can only claim once a day)
     end
 end)
