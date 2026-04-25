@@ -8,102 +8,74 @@ local GAMEPASS_LIST = {
     "890513823", 
     "890725129"
 }
+local cnt = 0 -- Moved outside so both tasks can access the same counter
 
--- 🔍 Improved Remote Search (Fixed the Bindable/Remote issue)
-local function getRemote()
-    local create = RS:FindFirstChild("CreateRoom", true) 
-    if create and create:IsA("RemoteFunction") then
-        return create
-    end
-    -- Fallback to the known path if the search fails
-    local folderPath = RS:FindFirstChild("RemoteCalls", true)
-    if folderPath then
-        local target = folderPath:FindFirstChild("CreateRoom", true)
-        if target and target:IsA("RemoteFunction") then return target end
+-- 🔍 Fix: Added the missing helper function to prevent "nil" errors
+local function getRemote(name)
+    local target = RS:FindFirstChild(name, true)
+    if target and (target:IsA("RemoteFunction") or target:IsA("RemoteEvent")) then
+        return target
     end
     return nil
 end
 
--- 🔍 Simplified Button Detection
+-- 🔍 Logic: Per your request, Room is "Closed" only if UI is Enabled
 local function isRoomClosed()
-local lobbyGui = LP.PlayerGui:FindFirstChild("Lobby_Main")
-if lobbyGui.Enabled == true then
-    return false
+    local lobbyGui = LP.PlayerGui:FindFirstChild("Lobby_Main")
+    if lobbyGui and lobbyGui.Enabled == true then
+        return true -- Room is closed/Lobby is open
     end
-    return true
+    return false
 end
 
-print("🚀 Script Running. Waiting for 'Play' button...")
+print("🚀 Script Running. Waiting for Lobby...")
+
+-- 2. Loop A: The 270s Auto-Reset (Destroys match if it lasts too long)
 task.spawn(function()
     while true do
-        -- 1. ⏳ The 270 Second Wait
         task.wait(270)
-
-        -- 2. 🔍 Logic Check: Are we in a match?
+        
         local lobbyGui = LP.PlayerGui:FindFirstChild("Lobby_Main")
         local isInMatch = lobbyGui and lobbyGui.Enabled == false
 
-        -- 3. 💥 Step A: Destroy Room (Only if in match)
         if isInMatch then
-            local destroyRemote = findRemote("DestroyRoom")
-            if destroyRemote and destroyRemote:IsA("RemoteFunction") then
-                print("💥 Time limit reached! Destroying old room...")
+            -- Fix: Using getRemote instead of the undefined findRemote
+            local destroyRemote = getRemote("DestroyRoom")
+            if destroyRemote then
+                print("💥 270s reached! Forcing room close...")
                 pcall(function() destroyRemote:InvokeServer() end)
-                task.wait(5) -- Give the game time to reset you to lobby
-            end
-        end
-
-        -- 4. 🏠 Step B: Create New Room (Lobby should be open now)
-        local createRemote = findRemote("CreateRoom")
-        if createRemote and createRemote:IsA("RemoteFunction") then
-            cnt = cnt % #GAMEPASS_LIST
-            local randomID = GAMEPASS_LIST[cnt + 1]
-
-            print("🎯 Attempting Room Creation with ID: " .. randomID)
-
-            local args = {
-                [1] = "Colors",
-                [2] = 10,
-                [3] = {
-                    ["assetType"] = "GamePass",
-                    ["assetId"] = randomID
-                },
-                [4] = true
-            }
-
-            local success, result = pcall(function()
-                return createRemote:InvokeServer(unpack(args))
-            end)
-
-            if success then
-                print("✅ Room Successfully Created!")
-                cnt = cnt + 1
-            else
-                warn("⚠️ Creation Failed: " .. tostring(result))
+                task.wait(5)
             end
         end
     end
 end)
-        
--- 2. The Main Loop (Room Creator)
+
+-- 3. Loop B: The Main Room Creator
 task.spawn(function()
-    task.wait(10)
-    local firstRun=true
-    local cnt = 0
+    task.wait(10) -- Initial load wait
+    local firstRun = true
+    
     while true do
-        if isRoomClosed()or firstRun==true then
-            print("yo")
-                firstRun=false
-            while isRoomClosed() do
-            task.wait(1)
+        -- Triggers when you are in Lobby (Enabled == true) or first start
+        if isRoomClosed() or firstRun == true then
+            if not firstRun then
+                print("🏠 Lobby detected. Starting creation sequence...")
             end
-            local create = getRemote()
             
+            firstRun = false
+            
+            -- If you are in the lobby, wait for the player to be ready
+            while isRoomClosed() do
+                task.wait(1)
+            end
+            
+            -- Now that lobby closed (game starting), find the remote
+            local create = getRemote("CreateRoom")
             if create then
                 cnt = cnt % #GAMEPASS_LIST
                 local randomID = GAMEPASS_LIST[cnt+1]
                 
-                print("🎯 Play Button Found! Attempting Room Creation: " .. randomID)
+                print("🎯 Attempting Room Creation: " .. randomID)
 
                 local args = {
                     [1] = "Colors",
@@ -120,30 +92,27 @@ task.spawn(function()
                 end)
 
                 if success then
-                    print("🏠 Room Successfully Created!")
+                    print("✅ Room Successfully Created!")
                     cnt = cnt + 1
-                    task.wait(15) -- Prevent instant double-creation
+                    task.wait(15) 
                 else
                     warn("⚠️ Remote Call Failed: " .. tostring(result))
                     task.wait(5)
                 end
-            else
-                warn("⚠️ 'CreateRoom' RemoteFunction not found!")
-                task.wait(10)
             end
         end
-        task.wait(2) -- Scan frequency
+        task.wait(2) -- Check frequency
     end
 end)
 
--- 3. Daily Spinner
+-- 4. Loop C: Daily Spinner
 task.spawn(function()
     while true do
-        local daily = RS:FindFirstChild("ClaimDailySpinner", true) 
-        if daily and daily:IsA("RemoteFunction") then
+        local daily = getRemote("ClaimDailySpinner") 
+        if daily then
             pcall(function() daily:InvokeServer() end)
             print("🎡 Daily Spinner Claimed!")
         end
-        task.wait(60) 
+        task.wait(5) 
     end
 end)
