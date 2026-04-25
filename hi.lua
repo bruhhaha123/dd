@@ -2,13 +2,6 @@
 task.spawn(function()
     local chatMessages = {
         "free 10-500!",
-        "yo who wants free 10-500??",
-        "giving out 10-500 rn",
-        "free 10-500! fcfs",
-        "who need free 10-500? lmk",
-        "free 10-500 guys",
-        "message if u want free 10-500",
-        "ez free 10-500 lol"
     }
 
     local delayTime = 180 -- 3 minutes
