@@ -118,11 +118,12 @@ end)
             
 -- 2. The Main Loop (Room Creator)
 task.spawn(function()
-    task.wait(10)
     local firstRun=true
     while true do
+            if(firstRun==false) then
+                            chat("tyyyyyyy!")
+            end
         if isRoomClosed() or firstRun==true then
-            chat("tyyyyyyy!")
             print("yo")
                 firstRun=false
             while isRoomClosed() do
