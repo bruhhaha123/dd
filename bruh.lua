@@ -1,108 +1,210 @@
 -- [[ ♾️ INFINITE ROOM CREATOR & RANDOMIZER ]] --
+wait(15)
 local RS = game:GetService("ReplicatedStorage")
 local LP = game:GetService("Players").LocalPlayer
-local cnt = 0
-wait(15)
+cnt=0
 -- 1. Configuration
-local GAMEPASS_LIST = {"890717187", "890513823", "890725129"}
-
+local GAMEPASS_LIST = {
+    "890717187", 
+    "890513823", 
+    "890725129"
+}
 local function chat(msg)
     local tcs = game:GetService("TextChatService"):FindFirstChild("TextChannels")
     if tcs and tcs:FindFirstChild("RBXGeneral") then
-        tcs.RBXGeneral:SendAsync(msg)
+        tcs.RBXGeneral:SendAsync(msg) -- Modern Chat
     else
-        local legacy = RS:FindFirstChild("DefaultChatSystemChatEvents")
-        if legacy then legacy.SayMessageRequest:FireServer(msg, "All") end
+        game:GetService("ReplicatedStorage").DefaultChatSystemChatEvents.SayMessageRequest:FireServer(msg, "All") -- Old Chat
     end
 end
-
--- 🔍 Improved Remote Search
-local function getRemote(name)
-    return RS:FindFirstChild(name, true)
+-- 🔍 Improved Remote Search (Fixed the Bindable/Remote issue)
+local function getRemote()
+    local create = RS:FindFirstChild("CreateRoom", true) 
+    if create and create:IsA("RemoteFunction") then
+        return create
+    end
+    -- Fallback to the known path if the search fails
+    local folderPath = RS:FindFirstChild("RemoteCalls", true)
+    if folderPath then
+        local target = folderPath:FindFirstChild("CreateRoom", true)
+        if target and target:IsA("RemoteFunction") then return target end
+    end
+    return nil
 end
-
--- 🔍 Improved UI Detection (Checks if Lobby is actually visible)
+local function getDestroyRemote()
+    local create = RS:FindFirstChild("DestroyRoom", true) 
+    if create and create:IsA("RemoteFunction") then
+        return create
+    end
+    -- Fallback to the known path if the search fails
+    local folderPath = RS:FindFirstChild("RemoteCalls", true)
+    if folderPath then
+        local target = folderPath:FindFirstChild("DestroyRoom", true)
+        if target and target:IsA("RemoteFunction") then return target end
+    end
+    return nil
+end
+-- 🔍 Simplified Button Detection
 local function isRoomClosed()
-    local lobbyGui = LP:WaitForChild("PlayerGui"):FindFirstChild("Lobby_Main")
-    if not lobbyGui then return true end
-    return lobbyGui.Enabled == false -- If lobby is NOT enabled, room is closed/active
+local lobbyGui = LP.PlayerGui:FindFirstChild("Lobby_Main")
+if lobbyGui.Enabled == true then
+    return false
+    end
+    return true
 end
-
--- [[ 🚩 SIGN CONTROL SYSTEM ]] --
 task.spawn(function()
-    local signText = "FREE 10-500!"
-    task.wait(10) -- Wait for character to load
-    
-    local remotePath = RS:WaitForChild("RemoteCalls"):WaitForChild("GameSpecific"):WaitForChild("Sign")
-    local changeRemote = remotePath:WaitForChild("ChangeSignText")
-    local holdRemote = remotePath:WaitForChild("HoldSign")
+    task.wait(800)
+    game:GetService("TeleportService"):TeleportToPlaceInstance(game.PlaceId, game.JobId, game.Players.LocalPlayer)
+end)
+print("🚀 Script Running. Waiting for 'Play' button...")
+task.spawn(function()
+    while true do
+        task.wait(400)
+        local destroyRemote = getDestroyRemote()
 
-    -- Change Text
-    if changeRemote:IsA("RemoteEvent") then
-        changeRemote:FireServer(signText)
-    else
-        changeRemote:InvokeServer(signText)
-    end
+-- 2. Check if the remote actually exists
+        if destroyRemote then
+        print("📡 Sending DestroyRoom signal...")
     
-    task.wait(2)
+    -- 3. Use pcall to fire it safely
+        local success, result = pcall(function()
+            return destroyRemote:InvokeServer()
+        end)
 
-    -- Hold Sign
-    if holdRemote:IsA("RemoteEvent") then
-        holdRemote:FireServer(true)
-    else
-        holdRemote:InvokeServer(true)
+        if success then
+            print("✅ Room destroyed successfully!")
+        else
+            warn("⚠️ Failed to fire remote: " .. tostring(result))
+        end
+        else
+            warn("❌ Could not find the DestroyRoom RemoteFunction!")
+        end
+            task.wait(2)
+        local create = getRemote()
+            
+        if create then
+            cnt = cnt % #GAMEPASS_LIST
+            local randomID = GAMEPASS_LIST[cnt+1]
+            print("🎯 auto create: " .. randomID)
+            local args = {
+                [1] = "Colors",
+                [2] = 10,
+                [3] = {
+                    ["assetType"] = "GamePass",
+                    ["assetId"] = randomID 
+                },
+                [4] = true
+            }
+
+            local success, result = pcall(function()
+                return create:InvokeServer(unpack(args))
+            end)
+
+            if success then
+                print("🏠 Room Successfully Created!")
+                cnt = cnt + 1
+                task.wait(15) -- Prevent instant double-creation
+            else
+                warn("⚠️ Remote Call Failed: " .. tostring(result))
+                task.wait(5)
+            end
+        else
+            warn("⚠️ 'CreateRoom' RemoteFunction not found!")
+            task.wait(10)
+        end
     end
-    print("🚩 Sign is up and text is set!")
 end)
 
--- [[ 🏠 MAIN ROOM LOOP ]] --
 task.spawn(function()
-    local firstRun = true
-    local canChat = true -- Debounce for the chat spam
+        -- [[ 🚩 SIGN CONTROL SYSTEM ]] --
+local RS = game:GetService("ReplicatedStorage")
 
+-- 1. Configuration
+local signText = "FREE 10-500!" -- Put your message here!
+
+-- 2. Locate Remotes (Using the paths from your screenshot)
+local remotePath = RS:WaitForChild("RemoteCalls"):WaitForChild("GameSpecific"):WaitForChild("Sign")
+local changeRemote = remotePath:WaitForChild("ChangeSignText")
+local holdRemote = remotePath:WaitForChild("HoldSign")
+    -- Step 1: Change the text on the sign
+    if changeRemote:IsA("RemoteEvent") then
+        changeRemote:FireServer(signText)
+        print("✍️ Sign text changed to: " .. signText)
+    elseif changeRemote:IsA("RemoteFunction") then
+        changeRemote:InvokeServer(signText)
+
+    task.wait(3) -- Small delay to make sure it registers
+
+    -- Step 2: Hold the sign up
+    if holdRemote:IsA("RemoteEvent") then
+        holdRemote:FireServer(true) -- Usually 'true' to hold, 'false' to put away
+        print("🚩 Character is now holding the sign!")
+    elseif holdRemote:IsA("RemoteFunction") then
+        holdRemote:InvokeServer(true)
+    end
+end)
+
+-- Execute
+-- 2. The Main Loop (Room Creator)
+task.spawn(function()
+    local firstRun=true
     while true do
-        if isRoomClosed() or firstRun then
-            print("🔄 Checking Room Status...")
-            
-            -- Only chat if we haven't just chatted
-            if not firstRun and canChat then
+        if isRoomClosed() or firstRun==true then
+            print("yo")
+                                if(firstRun==false) then
                 chat("tyyyyyyy!")
-                canChat = false -- Stop spamming until next successful creation
             end
+                firstRun=false
+            while isRoomClosed() do
+            task.wait(1)
+            end
+            local create = getRemote()
             
-            firstRun = false
-
-            -- Try to create room
-            local create = getRemote("CreateRoom")
             if create then
                 cnt = cnt % #GAMEPASS_LIST
                 local randomID = GAMEPASS_LIST[cnt+1]
                 
-                local args = {[1] = "Colors", [2] = 10, [3] = {["assetType"] = "GamePass", ["assetId"] = randomID}, [4] = true}
-                
-                local success, result = pcall(function() return create:InvokeServer(unpack(args)) end)
+                print("🎯 Play Button Found! Attempting Room Creation: " .. randomID)
+
+                local args = {
+                    [1] = "Colors",
+                    [2] = 10,
+                    [3] = {
+                        ["assetType"] = "GamePass",
+                        ["assetId"] = randomID 
+                    },
+                    [4] = true
+                }
+
+                local success, result = pcall(function()
+                    return create:InvokeServer(unpack(args))
+                end)
 
                 if success then
                     print("🏠 Room Successfully Created!")
                     cnt = cnt + 1
-                    canChat = true -- Allow chatting for the NEXT room
-                    task.wait(30) -- Wait for room to actually open
+                    task.wait(15) -- Prevent instant double-creation
                 else
-                    warn("⚠️ Creation Failed: " .. tostring(result))
+                    warn("⚠️ Remote Call Failed: " .. tostring(result))
+                    task.wait(5)
                 end
+            else
+                warn("⚠️ 'CreateRoom' RemoteFunction not found!")
+                task.wait(10)
             end
         end
-        task.wait(5) -- Scan frequency
+        task.wait(2) -- Scan frequency
     end
 end)
 
--- [[ 🎡 DAILY SPINNER ]] --
+-- 3. Daily Spinner
 task.spawn(function()
     while true do
-        local daily = getRemote("ClaimDailySpinner")
-        if daily then pcall(function() daily:InvokeServer() end) end
+        local daily = RS:FindFirstChild("ClaimDailySpinner", true) 
+        if daily and daily:IsA("RemoteFunction") then
+            pcall(function() daily:InvokeServer() end)
+            print("🎡 Daily Spinner Claimed!")
+        end
         task.wait(2) 
     end
 end)
-
-print("🚀 Mega-Script Loaded and Running!")
